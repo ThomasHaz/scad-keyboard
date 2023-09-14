@@ -1,26 +1,48 @@
-distance = 19.05;
-key_1u = 18;
+/* [Leave as Default] */
+// default: 19.05
+distance = 19.05; // 0.01
+// default: 18
+key_1u = 18; // 0.01
+// default: 14
+switch_width = 14; // 0.01
+// default: 14
+switch_depth = 14; // 0.01
 
-switch_width = 14;
-switch_depth = 14;
+/* [Config Options] */
 
-
+// smoother outer edge
 hull = false;
 
+// outter support
+rim_width = 3; // 0.1
+// space under plate
+rim_height = 2; // 0.1
+
+/* [Display Options] */
+display_matrix = true;
 display_keys = true;
 display_switches = true;
-cross_section = true;
+
+rotation = 12;
+pitch = 0;
+
+cross_section = false;
+cross_section_offset = 0;
 
 
-p_off = -3;
+col1 = [ 1.25, 1.5, 1.75, 1 ]; // 0.25
+col2 = [ 1, 1, 1, 1 ]; // 0.25
+col3 = [ 1, 1, 1, 1 ]; // 0.25
+col4 = [ 1, 1, 1, 1 ]; // 0.25
+col5 = [ 1, 1, 1, 1 ]; // 0.25
+col6 = [ 2, 1.5, 1, 1.5 ]; // 0.25
 
-values = [ [ 1.25, 1.5, 1.75, 1 ], [ 1, 1, 1, 1 ], [ 1, 1, 1, 1 ], [ 1, 1, 1, 1 ], [ 1, 1, 1, 1 ], [ 2, 1.5, 1, 1.5 ] ];
-
+values = [ col1, col2, col3, col4, col5, col6 ];
 
 
 cumsum = [for (a = 0, b = values[0]; a < len(values); a = a + 1, b = b + (values[a] == undef ? [0] : values[a])) b];
 
-function plate_offset(o) = 4.5 + o;
+function plate_offset(o) = o - 1;
 
 function key(u) = key_1u + distance * (u - 1);
 
@@ -116,12 +138,14 @@ module matrix(switches = true, keycaps = true) {
 
 
 
-module keyboard(matrix = false, case = true ) {
+module keyboard(matrix = display_matrix, case = true, rim = true ) {
     translate([ -190, 30, 0 ]) {
         if (case)
             color("#699") case();
         if(matrix)
-            translate([0,0,plate_offset(p_off)])matrix(switches = display_switches, keycaps = display_keys); 
+            translate([0,0,plate_offset(rim_height)])matrix(switches = display_switches, keycaps = display_keys); 
+        if (rim) 
+            rim();
     }
 }
 
@@ -146,10 +170,38 @@ module plate() {
     }
 }
 
+module rim(rim_offset = -rim_width) {
+    module x() {
+        offset(2)projection() 
+        {
+            if(hull) 
+            {
+                hull() matrix(switches = true, keycaps = true);
+            } else {
+                matrix(switches = true);
+            }
+        }
+    }
+    
+    module keys() {
+        projection() {
+            matrix(keycaps = false);
+        }
+    }
+    
+    
+    translate([0,0,-4.5])linear_extrude(rim_height)difference() {
+    x();
+    offset(rim_offset)x();
+    keys();
+    }
+    //matrix(keycaps = false);
+    
+    
+}
 
 
-rotation = 15;
-pitch = 0;
+
 
 
 module arrange_plates() {
@@ -158,21 +210,21 @@ module arrange_plates() {
 }
 
 module arrange_cases() {
-    rotate([0,0,-rotation])rotate([pitch,0,0])keyboard(matrix = !display_keys);
+    rotate([0,0,-rotation])rotate([pitch,0,0]) keyboard(matrix = display_matrix);
     
-    rotate([0,0,rotation])rotate([pitch,0,0])mirror([ 1, 0, 0 ])keyboard(matrix = display_keys);
+    rotate([0,0,rotation])rotate([pitch,0,0])mirror([ 1, 0, 0 ])keyboard(matrix = display_matrix);
 }
 
 module intersect() {
-    color("#fff")cube([500, 200, 100], center = true);
+    translate([0, cross_section_offset, 0])color("#fff")cube([500, 200, 100], center = true);
 }
 intersection() {
 if(cross_section)intersect();
 arrange_cases();
 }
 render() {
-    translate([0,0,plate_offset(p_off)]) intersection() {
+    translate([0,0,plate_offset(rim_height)]) intersection() {
         if(cross_section)intersect();
-        arrange_plates();
+         arrange_plates();
     }
 }
