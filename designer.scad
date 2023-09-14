@@ -118,11 +118,12 @@ module plate() {
 
 
 rotation = 15;
+pitch = 10;
 render() {
-    rotate([0,0,-rotation])rotate([10,0,0])plate();
-    rotate([0,0,rotation])rotate([10,0,0])mirror([ 1, 0, 0 ]) plate();
+    rotate([0,0,-rotation])rotate([pitch,0,0])plate();
+    rotate([0,0,rotation])rotate([pitch,0,0])mirror([ 1, 0, 0 ]) plate();
 }
 
-rotate([0,0,-rotation])rotate([10,0,0])keyboard();
-rotate([0,0,rotation])rotate([10,0,0])mirror([ 1, 0, 0 ]) keyboard();
+rotate([0,0,-rotation])rotate([pitch,0,0])keyboard();
+rotate([0,0,rotation])rotate([pitch,0,0])mirror([ 1, 0, 0 ]) keyboard();
 
