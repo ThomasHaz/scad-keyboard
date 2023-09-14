@@ -1,8 +1,18 @@
 distance = 19.05;
 key_1u = 18;
 
-switch_width = 14.1;
-switch_depth = 14.1;
+switch_width = 14;
+switch_depth = 14;
+
+
+hull = false;
+
+display_keys = true;
+display_switches = true;
+cross_section = true;
+
+
+p_off = -3;
 
 values = [ [ 1.25, 1.5, 1.75, 1 ], [ 1, 1, 1, 1 ], [ 1, 1, 1, 1 ], [ 1, 1, 1, 1 ], [ 1, 1, 1, 1 ], [ 2, 1.5, 1, 1.5 ] ];
 
@@ -10,6 +20,7 @@ values = [ [ 1.25, 1.5, 1.75, 1 ], [ 1, 1, 1, 1 ], [ 1, 1, 1, 1 ], [ 1, 1, 1, 1 
 
 cumsum = [for (a = 0, b = values[0]; a < len(values); a = a + 1, b = b + (values[a] == undef ? [0] : values[a])) b];
 
+function plate_offset(o) = 4.5 + o;
 
 function key(u) = key_1u + distance * (u - 1);
 
@@ -43,7 +54,13 @@ module shell()
 {
     mirror([ 0, 0, 1 ]) minkowski()
     {
-        linear_extrude(3) projection() hull() matrix();
+        linear_extrude(3) projection() {
+            if(hull) {
+                hull() matrix();
+            } else {
+                matrix();
+            }
+        }
         cylinder(10, 6, 10, center = true);
     }
 }
@@ -54,7 +71,13 @@ module case() {
     difference() {
         shell();
         minkowski(){
-            linear_extrude(1)projection()hull()matrix(false);
+            linear_extrude(1) projection() {
+                if(hull) {
+                    hull() matrix(false);
+                } else {
+                    matrix(false);
+                }
+            }
             cylinder(9, 1.5, 1.5, center = true);
         }
     }
@@ -93,10 +116,12 @@ module matrix(switches = true, keycaps = true) {
 
 
 
-module keyboard() {
+module keyboard(matrix = false, case = true ) {
     translate([ -190, 30, 0 ]) {
-        color("#699") case(); 
-        matrix(); 
+        if (case)
+            color("#699") case();
+        if(matrix)
+            translate([0,0,plate_offset(p_off)])matrix(switches = display_switches, keycaps = display_keys); 
     }
 }
 
@@ -107,7 +132,13 @@ module plate() {
     {
         difference() {
             minkowski(){
-                linear_extrude(2)projection()hull()matrix(switches = false);
+                linear_extrude(3)projection() {
+                    if(hull) {
+                        hull() matrix(switches = false);
+                    } else {
+                        matrix(switches = false);
+                    }
+                }
                 cylinder(1, 1.5, 1.5, center = true);
             }
             matrix();
@@ -118,12 +149,30 @@ module plate() {
 
 
 rotation = 15;
-pitch = 10;
-render() {
-    rotate([0,0,-rotation])rotate([pitch,0,0])plate();
+pitch = 0;
+
+
+module arrange_plates() {
+    rotate([0,0,-rotation])rotate([pitch,0,0]) plate();
     rotate([0,0,rotation])rotate([pitch,0,0])mirror([ 1, 0, 0 ]) plate();
 }
 
-rotate([0,0,-rotation])rotate([pitch,0,0])keyboard();
-rotate([0,0,rotation])rotate([pitch,0,0])mirror([ 1, 0, 0 ]) keyboard();
+module arrange_cases() {
+    rotate([0,0,-rotation])rotate([pitch,0,0])keyboard(matrix = !display_keys);
+    
+    rotate([0,0,rotation])rotate([pitch,0,0])mirror([ 1, 0, 0 ])keyboard(matrix = display_keys);
+}
 
+module intersect() {
+    color("#fff")cube([500, 200, 100], center = true);
+}
+intersection() {
+if(cross_section)intersect();
+arrange_cases();
+}
+render() {
+    translate([0,0,plate_offset(p_off)]) intersection() {
+        if(cross_section)intersect();
+        arrange_plates();
+    }
+}
